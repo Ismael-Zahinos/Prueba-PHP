@@ -1,0 +1,141 @@
+{% extends "base.html.twig" %}
+
+{% block title %}Listado de Reservas{% endblock %}
+
+{% block content %}
+    <section class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Filtros de Búsqueda</h2>
+            <button id="btn-toggle-modal" class="btn btn-primary">+ Nueva Reserva</button>
+        </div>
+
+        <form id="filtro-form">
+            <div class="grid-filters">
+                <div class="form-group">
+                    <label for="filtro-estado">Estado</label>
+                    <select id="filtro-estado" name="estado">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente" {% if filtros.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="confirmada" {% if filtros.estado == 'confirmada' %}selected{% endif %}>Confirmada</option>
+                        <option value="cancelada" {% if filtros.estado == 'cancelada' %}selected{% endif %}>Cancelada</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filtro-nombre">Nombre Huésped</label>
+                    <input type="text" id="filtro-nombre" name="nombre" value="{{ filtros.nombre }}" placeholder="Ej. Carlos">
+                </div>
+                <div class="form-group">
+                    <label for="filtro-desde">Fecha Entrada (Desde)</label>
+                    <input type="date" id="filtro-desde" name="fecha_desde" value="{{ filtros.fecha_desde }}">
+                </div>
+                <div class="form-group">
+                    <label for="filtro-hasta">Fecha Entrada (Hasta)</label>
+                    <input type="date" id="filtro-hasta" name="fecha_hasta" value="{{ filtros.fecha_hasta }}">
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+                <button type="button" id="btn-limpiar-filtros" class="btn btn-secondary">Limpiar</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Modal / Formulario de Creación de Reserva -->
+    <section id="modal-crear" class="card" style="display: none; border-left: 4px solid var(--primary);">
+        <h2>Nueva Reserva</h2>
+        <form id="form-crear-reserva" style="margin-top: 1rem;">
+            <div class="grid-filters">
+                <div class="form-group">
+                    <label for="nuevo-nombre">Nombre Huésped *</label>
+                    <input type="text" id="nuevo-nombre" name="nombre_huesped" required>
+                </div>
+                <div class="form-group">
+                    <label for="nuevo-email">Email Huésped *</label>
+                    <input type="email" id="nuevo-email" name="email_huesped" required>
+                </div>
+                <div class="form-group">
+                    <label for="nuevo-alojamiento">Alojamiento *</label>
+                    <input type="text" id="nuevo-alojamiento" name="nombre_alojamiento" required>
+                </div>
+                <div class="form-group">
+                    <label for="nuevo-importe">Importe (€) *</label>
+                    <input type="number" step="0.01" min="0.01" id="nuevo-importe" name="importe" required>
+                </div>
+                <div class="form-group">
+                    <label for="nuevo-entrada">Fecha Entrada *</label>
+                    <input type="date" id="nuevo-entrada" name="fecha_entrada" required>
+                </div>
+                <div class="form-group">
+                    <label for="nuevo-salida">Fecha Salida *</label>
+                    <input type="date" id="nuevo-salida" name="fecha_salida" required>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="nuevo-notas">Notas Adicionales</label>
+                <textarea id="nuevo-notas" name="notas" rows="2" placeholder="Peticiones especiales..."></textarea>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" id="btn-submit-crear" class="btn btn-primary">Guardar Reserva</button>
+                <button type="button" id="btn-cancelar-modal" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Tabla con listado de reservas -->
+    <section class="card">
+        <div id="loading" class="loading-spinner">Cargando reservas...</div>
+        <div class="table-responsive">
+            <table id="tabla-reservas">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Huésped</th>
+                        <th>Alojamiento</th>
+                        <th>Entrada</th>
+                        <th>Salida</th>
+                        <th>Importe</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-reservas">
+                    {% for reserva in reservas %}
+                        <tr id="fila-reserva-{{ reserva.id }}">
+                            <td>#{{ reserva.id }}</td>
+                            <td>
+                                <strong>{{ reserva.nombre_huesped }}</strong><br>
+                                <small style="color: var(--text-muted);">{{ reserva.email_huesped }}</small>
+                            </td>
+                            <td>{{ reserva.nombre_alojamiento }}</td>
+                            <td>{{ reserva.fecha_entrada|date("d/m/Y") }}</td>
+                            <td>{{ reserva.fecha_salida|date("d/m/Y") }}</td>
+                            <td>{{ reserva.importe|number_format(2, ',', '.') }} €</td>
+                            <td>
+                                <span class="badge badge-{{ reserva.estado }}">{{ reserva.estado }}</span>
+                            </td>
+                            <td style="white-space: nowrap;">
+                                <a href="{{ baseUrl }}/reservas/{{ reserva.id }}" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">Ver Detalle</a>
+                                {% if reserva.estado != 'cancelada' %}
+                                    <button class="btn btn-danger btn-cancelar-reserva" data-id="{{ reserva.id }}" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">Cancelar</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr id="sin-reservas">
+                            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                No se encontraron reservas con los criterios seleccionados.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    const BASE_URL = '{{ baseUrl }}';
+</script>
+<script src="{{ baseUrl }}/js/app.js"></script>
+{% endblock %}
