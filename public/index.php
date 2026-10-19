@@ -5,6 +5,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Database\database;
+use App\Repositories\ReservaRepository;
+use App\Services\ReservaService;
+use App\Controllers\ReservaApiController;
 
 // Cabeceras comunes para respuestas JSON de la API
 header("Access-Control-Allow-Origin: *");
@@ -16,6 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
+
+// Inicialización de dependencias
+$db = Database::getConnection();
+$reservaRepo = new ReservaRepository($db);
+$reservaService = new ReservaService($reservaRepo, $db);
+$apiController = new ReservaApiController($reservaService);
 
 // Obtener la ruta limpia y el método HTTP
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -44,6 +53,30 @@ try {
             'status' => 'success',
             'message' => 'API operativa y conexion a BD establecida correctamente'
         ]);
+        exit;
+    }
+
+    // Listar reservas (con filtros)
+    if ($uri === '/api/reservas' && $method === 'GET') {
+        $apiController->index();
+        exit;
+    }
+
+    // Crear reserva
+    if ($uri === '/api/reservas' && $method === 'POST') {
+        $apiController->store();
+        exit;
+    }
+
+    // Detalle de una reserva
+    if (preg_match('#^/api/reservas/(\d+)$#', $uri, $matches) && $method === 'GET') {
+        $apiController->show((int)$matches[1]);
+        exit;
+    }
+
+    // Cambiar estado (confirmar o cancelar)
+    if (preg_match('#^/api/reservas/(\d+)/estado$#', $uri, $matches) && in_array($method, ['PATCH', 'PUT', 'POST'], true)) {
+        $apiController->updateEstado((int)$matches[1]);
         exit;
     }
 
