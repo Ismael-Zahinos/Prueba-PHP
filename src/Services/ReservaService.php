@@ -19,6 +19,8 @@ class ReservaService
         $this->db = $db;
     }
 
+    
+
     public function listarReservas(array $filtros): array
     {
         return $this->repository->findAll($filtros);
@@ -35,9 +37,27 @@ class ReservaService
         return $reserva;
     }
 
+    private function normalizarFecha(string $fecha): string
+    {
+        // 1. Si viene en formato YYYY-MM-DD (navegador HTML / MySQL)
+        $d = \DateTime::createFromFormat('Y-m-d', $fecha);
+        if ($d && $d->format('Y-m-d') === $fecha) {
+            return $fecha;
+        }
+
+        // 2. Si viene en formato DD-MM-YYYY (tests unitarios)
+        $d = \DateTime::createFromFormat('d-m-Y', $fecha);
+        if ($d && $d->format('d-m-Y') === $fecha) {
+            return $d->format('Y-m-d');
+        }
+
+        throw new InvalidArgumentException("Las fechas deben tener el formato DD-MM-YYYY o YYYY-MM-DD.", 400);
+    }
+
     public function crearReserva(array $data): array
     {
-        $this->validarDatosCreacion($data);
+        // Normaliza y valida datos antes de comenzar la transacción
+        $data = $this->validarDatosCreacion($data);
 
         $this->db->beginTransaction();
 
@@ -99,7 +119,7 @@ class ReservaService
         }
     }
 
-    private function validarDatosCreacion(array $data): void
+    private function validarDatosCreacion(array $data): array
     {
         $camposObligatorios = [
             'nombre_huesped',
@@ -124,15 +144,18 @@ class ReservaService
             throw new InvalidArgumentException("El importe debe ser un número positivo.", 400);
         }
 
-        $entrada = \DateTime::createFromFormat('d-m-Y', $data['fecha_entrada']);
-        $salida = \DateTime::createFromFormat('d-m-Y', $data['fecha_salida']);
+        // Normalizar fechas aceptando tanto Y-m-d como d-m-Y
+        $fechaEntrada = $this->normalizarFecha((string)$data['fecha_entrada']);
+        $fechaSalida  = $this->normalizarFecha((string)$data['fecha_salida']);
 
-        if (!$entrada || !$salida) {
-            throw new InvalidArgumentException("Las fechas deben tener el formato DD-MM-YYYY.", 400);
-        }
-
-        if ($salida <= $entrada) {
+        if ($fechaSalida <= $fechaEntrada) {
             throw new InvalidArgumentException("La fecha de salida debe ser posterior a la fecha de entrada.", 400);
         }
+
+        // Devolvemos los datos con las fechas listas para MySQL (YYYY-MM-DD)
+        $data['fecha_entrada'] = $fechaEntrada;
+        $data['fecha_salida']  = $fechaSalida;
+
+        return $data;
     }
 }

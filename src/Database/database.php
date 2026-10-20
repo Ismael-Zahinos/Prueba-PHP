@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Database;
 
 use PDO;
 use PDOException;
 
-class database
+class Database
 {
     private static ?PDO $instance = null;
 
@@ -22,7 +24,7 @@ class database
                 $config['host'],
                 $config['port'],
                 $config['dbname'],
-                $config['charset']
+                $config['charset'] ?? 'utf8mb4'
             );
 
             $options = [

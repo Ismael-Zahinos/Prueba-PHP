@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return dateStr;
     }
 
+
+
     // ==========================================
     // 1. GESTIÓN DEL LISTADO Y FILTROS
     // ==========================================

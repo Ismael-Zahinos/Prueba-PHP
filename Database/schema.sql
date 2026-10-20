@@ -3,7 +3,7 @@
 -- =====================================================================
 
 -- Opcional: Descomentar si deseas que el script cree y seleccione la BD
-CREATE DATABASE IF NOT EXISTS `reservas_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- CREATE DATABASE IF NOT EXISTS `reservas_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `reservas_db`;
 
 SET FOREIGN_KEY_CHECKS = 0;
